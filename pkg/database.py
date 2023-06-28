@@ -7,11 +7,10 @@ db = SqliteDatabase('biquge.db')
 # 定义模型类
 class Chapter(Model):
     chapter_title = CharField()
-    volume_title = CharField()
-    volume_index = IntegerField()
+    chapter_index = IntegerField()
     chapter_content = CharField()
-    chapter_id = IntegerField()
-    book_id = IntegerField()
+    chapter_id = CharField()
+    book_id = CharField()
 
     class Meta:
         database = db

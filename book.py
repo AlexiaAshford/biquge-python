@@ -53,33 +53,34 @@ class BookDownload:
         return new_intro
 
     def download_content_threading(self, chapter_info) -> None:
-        content_info = BiquPavilionAPI.Chapter.content(self.book_info.book_id, chapter_info.get('id'))
-        if chapter_info.get('name') != "该章节未审核通过" and \
-                "正在更新中，请稍等片刻，内容更新后" not in content_info.get('content'):
-            self.add_database_pool.append(database.Chapter(
-                chapter_title=chapter_info.get('name'),
-                chapter_content=content_info.get('content'),
-                chapter_id=chapter_info.get('id'),
-                volume_title=chapter_info.get('volume_name'),
-                volume_index=chapter_info.get('volume_index'),
-                book_id=self.book_info.book_id
-            ))
+        for i in range(3):
+            content_info = BiquPavilionAPI.Book.content(self.book_info.book_id, chapter_info.get('chapter_id'))
+            if content_info:
+                res = database.Chapter(
+                    chapter_title=chapter_info.get('chapter_name'),
+                    chapter_content=content_info.get('content'),
+                    chapter_id=chapter_info.get('chapter_id'),
+                    chapter_index=chapter_info.get('volume_index'),
+                    book_id=self.book_info.book_id
+                )
+                res.save()
+                break
+            else:
+                print(chapter_info, "下载失败，正在重试！")
 
     def download_chapter_threading(self):
         download_chapter_list = []
         response = BiquPavilionAPI.Book.catalogue(self.book_info.book_id)
-        for index, catalogue_info in enumerate(response, start=1):
-            print(f"第{index}卷", catalogue_info.get('name'))
-            for info in catalogue_info.get('list'):
-                info['volume_name'] = catalogue_info.get('name')
-                info['volume_index'] = index
-                self.chapter_list.append(info)
-                if not database.Chapter.select().where(database.Chapter.chapter_id == info.get('id')).first():
-                    download_chapter_list.append(info)
+        if not response:
+            print("获取章节列表失败！")
+            return
+        for index, catalogue in enumerate(response, start=1):
+            if not database.Chapter.select().where(database.Chapter.chapter_id == catalogue.get('chapter_id')).first():
+                download_chapter_list.append(catalogue)
 
         if len(download_chapter_list) == 0:
             return print("没有需要下载的章节！")
-        with ThreadPoolExecutor(max_workers=Vars.cfg.data.get('threading_pool_size')) as executor:
+        with ThreadPoolExecutor(max_workers=64) as executor:
             threading_pool = []
             for chapter_info in download_chapter_list:
                 threading_pool.append(
@@ -88,8 +89,9 @@ class BookDownload:
             tqdm_threading_pool = tqdm(as_completed(threading_pool), total=len(download_chapter_list),
                                        desc="下载进度", ncols=80)
             for thread in as_completed(threading_pool):
-                tqdm_threading_pool.update(1)
                 thread.result()
+                tqdm_threading_pool.update(1)
+
             tqdm_threading_pool.close()
-        with database.db.atomic():
-            database.Chapter.bulk_create(self.add_database_pool, batch_size=200)
+        # with database.db.atomic():
+        #     database.Chapter.bulk_create(self.add_database_pool, batch_size=200)
