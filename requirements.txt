@@ -1,7 +1,9 @@
-pydantic~=1.9.1
+pydantic~=1.10.9
 tqdm~=4.65.0
 EbookLib~=0.18
-rich~=12.6.0
+rich~=13.4.2
 demjson~=1.6
 requests~=2.30.0
-peewee~=3.16.2p
+peewee~=3.16.2
+
+prettytable~=3.8.0

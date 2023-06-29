@@ -1,6 +1,19 @@
+import sys
+
 import cmd
 import argparse
 from instance import *
+
+
+def agreed_read_readme():
+    if Vars.cfg.data.get('Disclaimers') != 'yes':
+        print(Msg.msg_agree_terms)
+        confirm = input_str('>').strip()
+        if confirm == 'yes' or confirm == '同意':
+            Vars.cfg.data['Disclaimers'] = 'yes'
+            Vars.cfg.save()
+        else:
+            sys.exit()
 
 
 def main():
@@ -21,17 +34,25 @@ def main():
     search_parser.add_argument("-q", "--query", required=True, help="keyword of search")
     args = parser.parse_args()
 
-    if args.subcommand == "download":
-        cmd.download_book(args.book_id, args.epub)
-    elif args.subcommand == "update":
-        cmd.update_book_list(args.limit, args.filename, args.epub)
-    elif args.subcommand == "search":
-        cmd.search_book(args.query, args.page, args.epub)
+    command_map = {
+        "download": cmd.Command.download,
+        "update": cmd.Command.update,
+        "search": cmd.Command.search
+    }
+
+    command = command_map.get(args.subcommand)
+    if command:
+        if args.subcommand == "update":
+            command(args.limit, args.filename, args.epub)
+        elif args.subcommand == "search":
+            command(args.query, args.page, args.epub)
+        elif args.subcommand == "download":
+            command(args.book_id, args.epub)
     else:
         parser.print_help()
 
 
 if __name__ == '__main__':
     setup_config()
-    cmd.agreed_read_readme()
+    agreed_read_readme()
     main()
