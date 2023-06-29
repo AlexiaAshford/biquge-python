@@ -8,6 +8,7 @@ class Vars:
     book_info = None
     epub_info = None
 
+
 def mkdir(file_path: str):
     if not os.path.exists(file_path):
         os.mkdir(file_path)
@@ -16,8 +17,6 @@ def mkdir(file_path: str):
 def makedirs(file_path: str):
     if not os.path.exists(os.path.join(file_path)):
         os.makedirs(os.path.join(file_path))
-
-
 
 
 def input_str(prompt, default=None):
@@ -55,9 +54,6 @@ def setup_config():
     if type(Vars.cfg.data.get('save_book')) is not str or Vars.cfg.data.get('save_book') == "":
         Vars.cfg.data['save_book'] = 'novel'
         config_change = True
-    if type(Vars.cfg.data.get('config_book')) is not str or Vars.cfg.data.get('config_book') == "":
-        Vars.cfg.data['config_book'] = 'config'
-        config_change = True
     if type(Vars.cfg.data.get('threading_pool_size')) is not int or Vars.cfg.data.get('threading_pool_size') == "":
         Vars.cfg.data['threading_pool_size'] = 12
         config_change = True
@@ -67,11 +63,8 @@ def setup_config():
 
     if config_change:
         Vars.cfg.save()
-        if os.path.exists(Vars.cfg.data.get('save_book')) and os.path.exists(Vars.cfg.data.get('config_book')):
-            pass
-        else:
+        if not os.path.exists(Vars.cfg.data.get('save_book')):
             mkdir(Vars.cfg.data.get('save_book'))
-            mkdir(Vars.cfg.data.get('config_book'))
 
 
 class Msg:

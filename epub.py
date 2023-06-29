@@ -31,6 +31,7 @@ class EpubFile:
         )
         self.epub.add_item(write_intro)
         self.EpubList.append(write_intro)
+        return self
 
     def cover(self):
         if "http" not in self.book_info.cover_url:

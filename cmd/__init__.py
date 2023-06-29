@@ -26,8 +26,16 @@ def download_book(book_id: str, close_epub: bool):  # 通过小说ID下载单本
         if "{{{}}}" in book_info.book_info.book_name:
             book_info.book_info.book_name = api.aes_base64_decode_to_string(
                 book_info.book_info.book_name[book_info.book_info.book_name.index("{{{}}}") + 6:])
+
             book_info.book_info.author_name = api.aes_base64_decode_to_string(
                 book_info.book_info.author_name[book_info.book_info.author_name.index("{{{}}}") + 6:])
+
+        if not database.Book.select().where(database.Book.book_id == book_id).exists():
+            database.Book.create(book_id=book_id, book_name=book_info.book_info.book_name,
+                                 book_author=book_info.book_info.author_name,
+                                 book_state=book_info.book_info.book_state,
+                                 book_updated=book_info.book_info.book_updated,
+                                 book_intro=book_info.book_info.book_intro)
 
         makedirs(Vars.cfg.data.get('save_book') + "/" + book_info.book_info.book_name)
         book_info.show_book_info()
@@ -45,12 +53,9 @@ def download_book(book_id: str, close_epub: bool):  # 通过小说ID下载单本
         write(book_info.save_book_dir, 'a', res.chapter_title + '\n' + res.chapter_content + '\n\n')
 
     if close_epub:
-        epub_info = epub.EpubFile(book_info.book_info)
-        epub_info.add_intro()
-        epub_add_chapters_length = len(epub_add_chapters)
-        for index, chapter in enumerate(epub_add_chapters, start=1):
+        epub_info = epub.EpubFile(book_info.book_info).add_intro()
+        for chapter in epub_add_chapters:
             epub_info.add_chapter(*chapter)
-            print("epub output progress: {}/{}".format(index, epub_add_chapters_length), end='\r')
         epub_info.save()
 
     print("《{}》下载完成".format(book_info.book_info.book_name))

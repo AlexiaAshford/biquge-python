@@ -17,12 +17,12 @@ class Chapter(Model):
 
 
 class Book(Model):
+    book_id = CharField()
     book_name = CharField()
     book_author = CharField()
     book_state = CharField()
     book_updated = CharField()
     book_intro = CharField()
-    book_id = IntegerField()
 
     class Meta:
         database = db
