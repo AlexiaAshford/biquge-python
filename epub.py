@@ -1,7 +1,7 @@
 import os
 
 from instance import *
-import BiquPavilionAPI
+import api
 
 from ebooklib import epub
 
@@ -39,7 +39,7 @@ class EpubFile:
             self.book_info.cover_url = "https://imgapixs.pysmei.com/BookFiles/BookImages/" + self.book_info.cover_url
 
         # print(self.book_info.cover_url)
-        cover_jpg = BiquPavilionAPI.Cover.download_cover(self.book_info.cover_url)
+        cover_jpg = api.Cover.download_cover(self.book_info.cover_url)
         self.epub.set_cover(self.book_info.book_name + '.png', cover_jpg)
 
     def add_chapter(self, chapter_id: str, chapter_title: str, content: str, serial_number: str):

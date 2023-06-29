@@ -1,10 +1,10 @@
 import os
+import api
 import sys
 import book
 import epub
 from pkg import database
 from instance import *
-import BiquPavilionAPI
 from prettytable import PrettyTable
 
 
@@ -20,7 +20,7 @@ def agreed_read_readme():
 
 
 def download_book(book_id: str, close_epub: bool):  # 通过小说ID下载单本小说
-    response = BiquPavilionAPI.Book.novel_info(str(int(int(book_id) / 1000) + 1) + "/" + str(book_id))
+    response = api.Book.novel_info( str(book_id))
     if isinstance(response, dict):
         book_info = book.BookDownload(response)
         makedirs(Vars.cfg.data.get('save_book') + "/" + book_info.book_info.book_name)
@@ -52,7 +52,7 @@ def download_book(book_id: str, close_epub: bool):  # 通过小说ID下载单本
 
 
 def search_book(key: str, page: int, open_epub: bool):
-    response = BiquPavilionAPI.Book.search(key, page)
+    response = api.Book.search(key, page)
     table = PrettyTable(["编号", "书名", "作者", "状态", "更新时间", "最新章节"])
     for index, books in enumerate(response):
         table.add_row([index, books.get('Name'), books.get('Author'), books.get('BookStatus'),

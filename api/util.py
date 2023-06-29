@@ -7,7 +7,6 @@ session = requests.Session()
 session.headers.update({
     "Connection": "Keep-Alive",
     "Cache-Control": "no-cache",
-    "Accept-Encoding": "gzip",
     'User-Agent': "okhttp-okgo/jeasonlzy"
 })
 
@@ -31,24 +30,29 @@ class MaxRetry:
         return wrapper
 
 
-def request(method, api_url: str, data=None, params=None, **kwargs):
+def request(method: str, api_url: str, data=None, params=None, **kwargs):
     for retry in range(5):
         try:
-            response = method(api_url, headers=session.headers, params=params, data=data, **kwargs)
+            response = requests.request(method, api_url, headers=session.headers, params=params, data=data, **kwargs)
             response.encoding = 'utf-8-sig'
-            if response.status_code == 200:
-                return response
-        except requests.exceptions.RequestException as error:
-            print(f"\n{method.__name__.upper()} url:{api_url} Error:{error}")
+            return response
+        except Exception as error:
+            print(f"\n{method.upper()} url:{api_url} Error:{error}")
 
 
-def get(api_url: str, params=None, **kwargs) -> requests.Response:
-    return request(requests.get, api_url, params=params, **kwargs)
+def get(api_url: str, params=None, **kwargs):
+    res = request("get", api_url, params=params, **kwargs)
+    if res.status_code == 200:
+        try:
+            return res.json()
+        except:
+            return res.text
+    return {"code": res.status_code, "info": str(res.text)}
 
 
 def post(api_url: str, data=None, **kwargs) -> requests.Response:
-    return request(requests.post, api_url, data=data, **kwargs)
+    return request("post", api_url, data=data, **kwargs)
 
 
 def put(api_url: str, data=None, **kwargs):
-    return request(requests.put, api_url, data=data, **kwargs)
+    return request("put", api_url, data=data, **kwargs)

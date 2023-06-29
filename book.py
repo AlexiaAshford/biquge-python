@@ -1,11 +1,9 @@
-import os
-
-import BiquPavilionAPI
+import api
+import concurrent.futures
 from instance import *
 from pkg import model
 from tqdm import tqdm
 from pkg import database
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from prettytable import PrettyTable
 
@@ -20,7 +18,7 @@ class BookDownload:
 
         self.save_book_dir = None
         self.chapter_list = []
-        self.add_database_pool = []
+        self.download_failed = []
 
     def show_book_info(self):
         # Define the table structure
@@ -53,45 +51,41 @@ class BookDownload:
         return new_intro
 
     def download_content_threading(self, chapter_info) -> None:
-        for i in range(3):
-            content_info = BiquPavilionAPI.Book.content(self.book_info.book_id, chapter_info.get('chapter_id'))
-            if content_info:
-                res = database.Chapter(
-                    chapter_title=chapter_info.get('chapter_name'),
-                    chapter_content=content_info.get('content'),
-                    chapter_id=chapter_info.get('chapter_id'),
-                    chapter_index=chapter_info.get('volume_index'),
-                    book_id=self.book_info.book_id
-                )
-                res.save()
-                break
-            else:
-                print(chapter_info, "下载失败，正在重试！")
+        content_info = api.Book.content(self.book_info.book_id, chapter_info.get('chapter_id'))
+        if content_info:
+            res = database.Chapter(
+                chapter_title=chapter_info.get('chapter_name'),
+                chapter_content=content_info.get('content'),
+                chapter_id=chapter_info.get('chapter_id'),
+                chapter_index=chapter_info.get('volume_index'),
+                book_id=self.book_info.book_id
+            )
+            res.save()
+        else:
+            self.download_failed.append(chapter_info)
 
     def download_chapter_threading(self):
-        download_chapter_list = []
-        response = BiquPavilionAPI.Book.catalogue(self.book_info.book_id)
+        response = api.Book.catalogue(self.book_info.book_id)
         if not response:
             print("获取章节列表失败！")
             return
-        for index, catalogue in enumerate(response, start=1):
-            if not database.Chapter.select().where(database.Chapter.chapter_id == catalogue.get('chapter_id')).first():
-                download_chapter_list.append(catalogue)
+
+        download_chapter_list = [catalogue for catalogue in response if not database.Chapter.select().where(
+            database.Chapter.chapter_id == catalogue.get('chapter_id')).first()]
 
         if len(download_chapter_list) == 0:
-            return print("没有需要下载的章节！")
-        with ThreadPoolExecutor(max_workers=64) as executor:
-            threading_pool = []
-            for chapter_info in download_chapter_list:
-                threading_pool.append(
-                    executor.submit(self.download_content_threading, chapter_info)
-                )
-            tqdm_threading_pool = tqdm(as_completed(threading_pool), total=len(download_chapter_list),
-                                       desc="下载进度", ncols=80)
-            for thread in as_completed(threading_pool):
-                thread.result()
-                tqdm_threading_pool.update(1)
+            print("没有需要下载的章节！")
+            return
 
-            tqdm_threading_pool.close()
-        # with database.db.atomic():
-        #     database.Chapter.bulk_create(self.add_database_pool, batch_size=200)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=64) as executor:
+            futures = [executor.submit(self.download_content_threading, chapter_info) for chapter_info in
+                       download_chapter_list]
+            with tqdm(total=len(download_chapter_list), desc="下载进度", ncols=80) as pbar:
+                for future in concurrent.futures.as_completed(futures):
+                    future.result()
+                    pbar.update(1)
+
+        print("一共 {} 章节，下载失败 {} 章节".format(len(download_chapter_list), len(self.download_failed)))
+
+        # table = PrettyTable(["章节"
+        # for chapter_info in self.download_failed:
