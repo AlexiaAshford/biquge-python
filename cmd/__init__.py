@@ -31,11 +31,12 @@ def download_book(book_id: str, close_epub: bool):  # 通过小说ID下载单本
 
     epub_add_chapters = []
 
-    for chapter_index, info in enumerate(book_info.chapter_list):  # 获取目录文,并且 遍历文件名
-        res = database.Chapter.select().where(database.Chapter.chapter_id == info.get('id')).first()
-        if res:
-            epub_add_chapters.append((res.chapter_id, res.chapter_title, res.chapter_content, str(chapter_index)))
-            write(book_info.save_book_dir, 'a', res.chapter_title + '\n' + res.chapter_content + '\n\n')
+    # 通过chapter_index排序
+    chapter_list = database.Chapter.select().group_by(database.Chapter.chapter_index).where(
+        database.Chapter.book_id == book_id)
+    for res in chapter_list:  # 获取目录文,并且 遍历文件名
+        epub_add_chapters.append((res.chapter_id, res.chapter_title, res.chapter_content, res.chapter_index))
+        write(book_info.save_book_dir, 'a', res.chapter_title + '\n' + res.chapter_content + '\n\n')
 
     if close_epub:
         epub_info = epub.EpubFile(book_info.book_info)

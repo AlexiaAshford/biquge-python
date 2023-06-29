@@ -17,7 +17,6 @@ class BookDownload:
             quit(str(e))
 
         self.save_book_dir = None
-        self.chapter_list = []
         self.download_failed = []
 
     def show_book_info(self):

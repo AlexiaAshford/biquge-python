@@ -65,7 +65,7 @@ class Cover:
         try:
             response = util.get(url, params=params)
             if response:
-                return response.content
+                return response
             print('[ERROR COVER]', url)
         except Exception as e:
             print('[ERROR COVER]', url, e)
