@@ -20,7 +20,7 @@ def agreed_read_readme():
 
 
 def download_book(book_id: str, close_epub: bool):  # 通过小说ID下载单本小说
-    response = api.Book.novel_info( str(book_id))
+    response = api.Book.novel_info(book_id)
     if isinstance(response, dict):
         book_info = book.BookDownload(response)
         makedirs(Vars.cfg.data.get('save_book') + "/" + book_info.book_info.book_name)

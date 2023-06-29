@@ -50,24 +50,24 @@ class BookDownload:
                 new_intro += "\n" + intro_line[:width]
         return new_intro
 
-    def download_content_threading(self, chapter_info) -> None:
+    def download_content_threading(self, chapter_info):
         content_info = api.Book.content(self.book_info.book_id, chapter_info.get('chapter_id'))
         if content_info:
             try:
-                database.Chapter(
+                res = database.Chapter(
                     chapter_title=chapter_info.get('chapter_name'),
                     chapter_content=content_info.get('content'),
                     chapter_id=chapter_info.get('chapter_id'),
                     chapter_index=chapter_info.get('volume_index'),
                     book_id=self.book_info.book_id
-                ).save()
+                )
+                if res.chapter_content:
+                    res.save()
+                return
             except Exception as e:
-                print(e)
-                print("保存章节失败！")
-                self.download_failed.append(chapter_info)
+                print(e, "保存章节失败！")
 
-        else:
-            self.download_failed.append(chapter_info)
+        self.download_failed.append(chapter_info)
 
     def download_chapter_threading(self):
         response = api.Book.catalogue(self.book_info.book_id)
@@ -90,9 +90,11 @@ class BookDownload:
                     future.result()
                     pbar.update(1)
 
-        print("一共 {} 章节，下载失败 {} 章节".format(len(download_chapter_list), len(self.download_failed)))
-        table = PrettyTable(["章节序号", "章节名", "章节ID"])
-        for i in self.download_failed:
-            table.add_row([i.get('volume_index'), i.get('chapter_name'), i.get('chapter_id')])
-        print(table)
-        self.download_failed.clear()
+        if self.download_failed:
+            print("一共 {} 章节，下载失败 {} 章节".format(len(download_chapter_list), len(self.download_failed)))
+            table = PrettyTable(["章节序号", "章节名", "章节ID"])
+            for i in self.download_failed:
+                table.add_row([i.get('volume_index'), i.get('chapter_name'), i.get('chapter_id')])
+                self.download_content_threading(i)
+            print(table)
+            self.download_failed.clear()

@@ -43,6 +43,8 @@ def request(method: str, api_url: str, data=None, params=None, **kwargs):
 def get(api_url: str, params=None, **kwargs):
     res = request("get", api_url, params=params, **kwargs)
     if res.status_code == 200:
+        if api_url.find(".jpg") != -1:
+            return res.content
         try:
             return res.json()
         except:
