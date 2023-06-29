@@ -53,14 +53,19 @@ class BookDownload:
     def download_content_threading(self, chapter_info) -> None:
         content_info = api.Book.content(self.book_info.book_id, chapter_info.get('chapter_id'))
         if content_info:
-            res = database.Chapter(
-                chapter_title=chapter_info.get('chapter_name'),
-                chapter_content=content_info.get('content'),
-                chapter_id=chapter_info.get('chapter_id'),
-                chapter_index=chapter_info.get('volume_index'),
-                book_id=self.book_info.book_id
-            )
-            res.save()
+            try:
+                database.Chapter(
+                    chapter_title=chapter_info.get('chapter_name'),
+                    chapter_content=content_info.get('content'),
+                    chapter_id=chapter_info.get('chapter_id'),
+                    chapter_index=chapter_info.get('volume_index'),
+                    book_id=self.book_info.book_id
+                ).save()
+            except Exception as e:
+                print(e)
+                print("保存章节失败！")
+                self.download_failed.append(chapter_info)
+
         else:
             self.download_failed.append(chapter_info)
 
@@ -86,6 +91,8 @@ class BookDownload:
                     pbar.update(1)
 
         print("一共 {} 章节，下载失败 {} 章节".format(len(download_chapter_list), len(self.download_failed)))
-
-        # table = PrettyTable(["章节"
-        # for chapter_info in self.download_failed:
+        table = PrettyTable(["章节序号", "章节名", "章节ID"])
+        for i in self.download_failed:
+            table.add_row([i.get('volume_index'), i.get('chapter_name'), i.get('chapter_id')])
+        print(table)
+        self.download_failed.clear()
