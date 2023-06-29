@@ -23,6 +23,12 @@ def download_book(book_id: str, close_epub: bool):  # 通过小说ID下载单本
     response = api.Book.novel_info(book_id)
     if isinstance(response, dict):
         book_info = book.BookDownload(response)
+        if "{{{}}}" in book_info.book_info.book_name:
+            book_info.book_info.book_name = api.aes_base64_decode_to_string(
+                book_info.book_info.book_name[book_info.book_info.book_name.index("{{{}}}") + 6:])
+            book_info.book_info.author_name = api.aes_base64_decode_to_string(
+                book_info.book_info.author_name[book_info.book_info.author_name.index("{{{}}}") + 6:])
+
         makedirs(Vars.cfg.data.get('save_book') + "/" + book_info.book_info.book_name)
         book_info.show_book_info()
         book_info.download_chapter_threading()
